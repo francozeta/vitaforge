@@ -1,4 +1,5 @@
 import { FeaturedProducts } from "@/components/home/featured-products";
+import { Footer } from "@/components/home/footer";
 import HeroBanner from "@/components/home/hero-banner";
 import { Newsletter } from "@/components/home/newsletter";
 import { PromotionBanner } from "@/components/home/promotion-banner";
