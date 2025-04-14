@@ -35,7 +35,7 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section className="container px-4">
+    <section className="container px-4 mx-auto">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2 text-center">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">What Our Customers Say</h2>

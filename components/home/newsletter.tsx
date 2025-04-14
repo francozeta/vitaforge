@@ -27,7 +27,7 @@ export function Newsletter() {
   }
 
   return (
-    <section className="container px-4">
+    <section className="container px-4 mx-auto">
       <div className="rounded-xl border bg-muted/40 p-6 sm:p-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="max-w-md">
