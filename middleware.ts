@@ -12,21 +12,30 @@ export async function middleware(req: NextRequest) {
   const isAuthenticated = !!token
 
   const isAdminRoute = req.nextUrl.pathname.startsWith("/admin")
+  const isAdminLoginRoute = req.nextUrl.pathname === "/admin/login"
   const isAuthRoute = req.nextUrl.pathname.startsWith("/login") || req.nextUrl.pathname.startsWith("/register")
 
   // Redirect authenticated users away from auth pages
-  if (isAuthenticated && isAuthRoute) {
-    return NextResponse.redirect(new URL("/", req.url))
+  if (isAuthenticated && (isAuthRoute || isAdminLoginRoute)) {
+    // Si es admin y está en la página de login de admin, redirigir al dashboard
+    if (token.role === "admin" && isAdminLoginRoute) {
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url))
+    }
+
+    // Si es usuario normal o admin en página de login normal, redirigir a inicio
+    if (isAuthRoute) {
+      return NextResponse.redirect(new URL("/", req.url))
+    }
   }
 
-  // Check for admin routes
-  if (isAdminRoute) {
+  // Check for admin routes (excepto la página de login de admin)
+  if (isAdminRoute && !isAdminLoginRoute) {
     if (!isAuthenticated) {
-      return NextResponse.redirect(new URL("/login?callbackUrl=" + encodeURIComponent(req.url), req.url))
+      return NextResponse.redirect(new URL("/admin/login?callbackUrl=" + encodeURIComponent(req.url), req.url))
     }
 
     if (token.role !== "admin") {
-      return NextResponse.redirect(new URL("/", req.url))
+      return NextResponse.redirect(new URL("/unauthorized", req.url))
     }
   }
 

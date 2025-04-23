@@ -1,8 +1,7 @@
-import NextAuth from "next-auth"
+import NextAuth, { type NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import dbConnect from "@/lib/db"
 import User from "@/models/User"
-import type { NextAuthOptions } from "next-auth"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,37 +9,38 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Contraseña", type: "password" },
+        password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Por favor proporcione email y contraseña")
+          return null
         }
 
         await dbConnect()
 
-        // Find user by email and explicitly select password field
-        const user = await User.findOne({ email: credentials.email }).select("+password")
+        try {
+          // Incluir el campo password en la consulta
+          const user = await User.findOne({ email: credentials.email }).select("+password")
 
-        if (!user) {
-          throw new Error("Email o contraseña incorrectos")
-        }
+          if (!user || !user.isActive) {
+            return null
+          }
 
-        if (!user.isActive) {
-          throw new Error("Esta cuenta ha sido desactivada")
-        }
+          const isPasswordValid = await user.comparePassword(credentials.password)
 
-        const isPasswordCorrect = await user.comparePassword(credentials.password)
+          if (!isPasswordValid) {
+            return null
+          }
 
-        if (!isPasswordCorrect) {
-          throw new Error("Email o contraseña incorrectos")
-        }
-
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          role: user.role,
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error("Error de autenticación:", error)
+          return null
         }
       },
     }),
@@ -48,26 +48,33 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
         token.role = user.role
+        token.id = user.id
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.id = token.id as string
       }
       return session
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: (context) => {
+      // Determinar la página de login basada en la URL de callback
+      const { callbackUrl } = context?.query || {}
+      if (typeof callbackUrl === "string" && callbackUrl.includes("/admin")) {
+        return "/admin/login"
+      }
+      return "/login"
+    },
     error: "/login",
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   secret: process.env.NEXTAUTH_SECRET,
 }

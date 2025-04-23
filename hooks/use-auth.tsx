@@ -4,28 +4,53 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-export function useAuth({ required = false, adminOnly = false } = {}) {
+interface UseAuthOptions {
+  required?: boolean
+  redirectTo?: string
+  requiredRole?: string | string[]
+}
+
+export function useAuth({ required = false, redirectTo = "/login", requiredRole }: UseAuthOptions = {}) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const isLoading = status === "loading"
   const isAuthenticated = status === "authenticated"
-  const isAdmin = session?.user?.role === "admin"
+  const isAuthorized = checkAuthorization(session, requiredRole)
 
   useEffect(() => {
-    if (!isLoading) {
-      if (required && !isAuthenticated) {
-        router.push("/login")
-      } else if (adminOnly && !isAdmin) {
-        router.push("/")
-      }
+    // Si la autenticación aún está cargando, no hacer nada
+    if (isLoading) return
+
+    // Si se requiere autenticación y el usuario no está autenticado, redirigir
+    if (required && !isAuthenticated) {
+      router.push(`${redirectTo}?callbackUrl=${encodeURIComponent(window.location.href)}`)
+      return
     }
-  }, [isLoading, isAuthenticated, isAdmin, required, adminOnly, router])
+
+    // Si se requiere un rol específico y el usuario no está autorizado, redirigir
+    if (requiredRole && !isAuthorized) {
+      router.push("/unauthorized")
+      return
+    }
+  }, [isLoading, isAuthenticated, isAuthorized, required, redirectTo, requiredRole, router])
 
   return {
     session,
     status,
     isLoading,
     isAuthenticated,
-    isAdmin,
+    isAuthorized,
   }
+}
+
+function checkAuthorization(session: any, requiredRole?: string | string[]) {
+  if (!session || !requiredRole) return true
+
+  const userRole = session.user?.role || "user"
+
+  if (Array.isArray(requiredRole)) {
+    return requiredRole.includes(userRole)
+  }
+
+  return userRole === requiredRole
 }

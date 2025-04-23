@@ -57,7 +57,7 @@ export function HeaderClient() {
         </button>
       </div>
 
-      {/* Mobile menu using Drawer component */}
+      {/* Mobile menu - Renderizado condicionalmente */}
       <MobileMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
