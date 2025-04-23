@@ -3,9 +3,19 @@ import { ShoppingBag } from "lucide-react"
 
 interface CartButtonProps {
   count: number
+  isLoading?: boolean
 }
 
-export function CartButton({ count }: CartButtonProps) {
+export function CartButton({ count, isLoading }: CartButtonProps) {
+  if (isLoading) {
+    return (
+      <div className="relative p-2">
+        <div className="h-6 w-6 rounded bg-gray-200 animate-pulse"></div>
+        <div className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-gray-200 animate-pulse"></div>
+      </div>
+    )
+  }
+
   return (
     <Link href="/cart" className="group relative p-2 text-gray-700 hover:text-black">
       <ShoppingBag className="h-6 w-6" />
