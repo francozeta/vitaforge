@@ -47,8 +47,8 @@ export function FeaturedProducts() {
     <section className="container px-4 mx-auto">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Featured Products</h2>
-          <p className="text-muted-foreground">Our most popular supplements, trusted by athletes worldwide.</p>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Productos Destacados</h2>
+          <p className="text-muted-foreground">Nuestros suplementos más populares, en los que confían atletas de todo el mundo.</p>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {featuredProducts.map((product) => (
@@ -73,7 +73,7 @@ export function FeaturedProducts() {
               </CardContent>
               <CardFooter className="p-4 pt-0">
                 <Button asChild className="w-full">
-                  <Link href={`/products/${product.id}`}>View Product</Link>
+                  <Link href={`/products/${product.id}`}>Ver Producto</Link>
                 </Button>
               </CardFooter>
             </Card>
@@ -81,7 +81,7 @@ export function FeaturedProducts() {
         </div>
         <div className="flex justify-center">
           <Button asChild variant="outline" className="mt-4">
-            <Link href="/products">View All Products</Link>
+            <Link href="/products">Ver Más Productos</Link>
           </Button>
         </div>
       </div>

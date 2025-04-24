@@ -10,26 +10,26 @@ const testimonials = [
     role: "Professional Athlete",
     content:
       "VitaForge supplements have been a game-changer for my training regimen. The quality is unmatched and I've seen significant improvements in my recovery time.",
-    avatar: "/placeholder.svg?height=100&width=100&query=athletic+man+portrait",
+    avatar: "https://twkldqdlsxiobvhsfwzh.supabase.co/storage/v1/object/public/testimonials//p-1.jpg",
     rating: 5,
   },
   {
     id: 2,
-    name: "Sarah Williams",
-    role: "Fitness Instructor",
-    content:
-      "I recommend VitaForge to all my clients. Their products are clean, effective, and backed by science. The protein blend is my personal favorite.",
-    avatar: "/placeholder.svg?height=100&width=100&query=fitness+woman+portrait",
-    rating: 5,
-  },
-  {
-    id: 3,
     name: "Michael Chen",
     role: "Nutritionist",
     content:
       "As a nutritionist, I'm very particular about the supplements I endorse. VitaForge meets all my criteria for quality, transparency, and efficacy.",
-    avatar: "/placeholder.svg?height=100&width=100&query=asian+man+professional+portrait",
+    avatar: "https://twkldqdlsxiobvhsfwzh.supabase.co/storage/v1/object/public/testimonials//p-2.jpg",
     rating: 4,
+  },
+  {
+    id: 3,
+    name: "Sarah Williams",
+    role: "Fitness Instructor",
+    content:
+      "I recommend VitaForge to all my clients. Their products are clean, effective, and backed by science. The protein blend is my personal favorite.",
+    avatar: "https://twkldqdlsxiobvhsfwzh.supabase.co/storage/v1/object/public/testimonials//p-3.jpg",
+    rating: 5,
   },
 ]
 
@@ -38,10 +38,9 @@ export function Testimonials() {
     <section className="container px-4 mx-auto">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2 text-center">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">What Our Customers Say</h2>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Lo que dicen nuestros clientes</h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Don't just take our word for it. Here's what athletes and fitness enthusiasts have to say about our
-            products.
+            No se fíe solo de nuestras palabras. Esto es lo que los atletas y entusiastas del fitness opinan sobre nuestros productos.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -54,7 +53,7 @@ export function Testimonials() {
                       src={testimonial.avatar || "/placeholder.svg"}
                       alt={testimonial.name}
                       fill
-                      className="object-cover"
+                      className="object-cover grayscale"
                     />
                   </div>
                   <div>

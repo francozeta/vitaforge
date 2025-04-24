@@ -1,10 +1,3 @@
-import type { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "Panel de Administración | VitaForge",
-  description: "Panel de administración para gestionar productos, pedidos y usuarios.",
-}
-
 export default function AdminDashboardPage() {
   return (
     <div className="p-8">
@@ -33,5 +26,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     </div>
+    /*  ahora lo q haremos sera el modelado del producto, tendra lo q un producto real tendria y habra categorias etc y filtrado en la pag principal aqui  */
   )
 }
