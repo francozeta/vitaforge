@@ -1,12 +1,14 @@
 "use client"
 
+import { Badge } from "@/components/ui/badge"
+
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { toast } from "sonner"
-import { Trash2, Upload, Plus, X } from "lucide-react"
+import { Trash2, Upload, Plus, X, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { generateSKU } from "@/lib/utils"
 
 interface Category {
   _id: string
@@ -24,8 +27,10 @@ interface Category {
 
 interface ProductImage {
   url: string
-  path: string
+  path?: string
+  file?: File
   alt?: string
+  isNew?: boolean
 }
 
 interface NutritionalInfo {
@@ -38,24 +43,26 @@ interface NutritionalInfo {
   additionalInfo?: Record<string, string>
 }
 
+interface ProductFormData {
+  _id?: string
+  name: string
+  description: string
+  shortDescription: string
+  price: number
+  compareAtPrice?: number
+  stock: number
+  sku: string
+  images: ProductImage[]
+  category: string
+  tags: string[]
+  ingredients: string[]
+  nutritionalInfo: NutritionalInfo
+  featured: boolean
+  isActive: boolean
+}
+
 interface ProductFormProps {
-  initialData?: {
-    _id?: string
-    name: string
-    description: string
-    shortDescription: string
-    price: number
-    compareAtPrice?: number
-    stock: number
-    sku: string
-    images: ProductImage[]
-    category: string
-    tags: string[]
-    ingredients: string[]
-    nutritionalInfo: NutritionalInfo
-    featured: boolean
-    isActive: boolean
-  }
+  initialData?: ProductFormData
   categories: Category[]
 }
 
@@ -63,10 +70,9 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
 
   // Estado del formulario
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     description: "",
     shortDescription: "",
@@ -112,13 +118,17 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
 
     if (name.includes(".")) {
       const [parent, child] = name.split(".")
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value,
-        },
-      }))
+
+      // Corregido: Usar un enfoque más seguro para actualizar objetos anidados
+      if (parent === "nutritionalInfo") {
+        setFormData((prev) => ({
+          ...prev,
+          nutritionalInfo: {
+            ...prev.nutritionalInfo,
+            [child]: value,
+          },
+        }))
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -133,13 +143,17 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
 
     if (name.includes(".")) {
       const [parent, child] = name.split(".")
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: Number.parseFloat(value) || 0,
-        },
-      }))
+
+      // Corregido: Usar un enfoque más seguro para actualizar objetos anidados
+      if (parent === "nutritionalInfo") {
+        setFormData((prev) => ({
+          ...prev,
+          nutritionalInfo: {
+            ...prev.nutritionalInfo,
+            [child]: Number.parseFloat(value) || 0,
+          },
+        }))
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -162,6 +176,21 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
       ...prev,
       [name]: checked,
     }))
+  }
+
+  // Generar SKU automáticamente
+  const handleGenerateSKU = () => {
+    const selectedCategory = categories.find((c) => c._id === formData.category)
+    const categoryPrefix = selectedCategory ? selectedCategory.name.substring(0, 3).toUpperCase() : "SUP"
+
+    const newSKU = generateSKU(categoryPrefix, formData.name)
+
+    setFormData((prev) => ({
+      ...prev,
+      sku: newSKU,
+    }))
+
+    toast.success("SKU generado automáticamente")
   }
 
   // Agregar tag
@@ -222,7 +251,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
 
   // Eliminar información nutricional adicional
   const handleRemoveAdditionalInfo = (key: string) => {
-    const newAdditionalInfo = { ...formData.nutritionalInfo.additionalInfo }
+    const newAdditionalInfo = { ...formData.nutritionalInfo.additionalInfo } as Record<string, string>
     delete newAdditionalInfo[key]
 
     setFormData((prev) => ({
@@ -234,8 +263,8 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
     }))
   }
 
-  // Manejar subida de imágenes
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Manejar selección de imágenes (solo vista previa)
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
 
     const file = e.target.files[0]
@@ -254,54 +283,83 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
       return
     }
 
-    setUploadingImage(true)
+    // Crear URL temporal para vista previa
+    const imageUrl = URL.createObjectURL(file)
 
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("productId", initialData?._id || "new")
+    setFormData((prev) => ({
+      ...prev,
+      images: [
+        ...prev.images,
+        {
+          url: imageUrl,
+          file: file,
+          alt: prev.name || "Imagen de producto",
+          isNew: true,
+        },
+      ],
+    }))
 
-      const response = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || "Error al subir la imagen")
-      }
-
-      const result = await response.json()
-
-      setFormData((prev) => ({
-        ...prev,
-        images: [
-          ...prev.images,
-          {
-            url: result.url,
-            path: result.path,
-            alt: prev.name,
-          },
-        ],
-      }))
-
-      toast.success("Imagen subida exitosamente")
-    } catch (error: any) {
-      toast.error(error.message || "Error al subir la imagen")
-    } finally {
-      setUploadingImage(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
+    // Limpiar input de archivo
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
   }
 
   // Eliminar imagen
-  const handleRemoveImage = (path: string) => {
+  const handleRemoveImage = (index: number) => {
+    const newImages = [...formData.images]
+
+    // Si la imagen tiene una URL temporal creada con URL.createObjectURL, la revocamos
+    if (newImages[index].isNew && newImages[index].url) {
+      URL.revokeObjectURL(newImages[index].url)
+    }
+
+    newImages.splice(index, 1)
+
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((img) => img.path !== path),
+      images: newImages,
     }))
+  }
+
+  // Subir imágenes a Supabase
+  const uploadImages = async (productId: string) => {
+    const newImages = []
+    const existingImages = formData.images.filter((img) => !img.isNew)
+
+    // Subir solo las imágenes nuevas
+    for (const image of formData.images) {
+      if (image.isNew && image.file) {
+        const formDataObj = new FormData()
+        formDataObj.append("file", image.file)
+        formDataObj.append("productId", productId)
+
+        try {
+          const response = await fetch("/api/admin/upload", {
+            method: "POST",
+            body: formDataObj,
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || "Error al subir la imagen")
+          }
+
+          const result = await response.json()
+          newImages.push({
+            url: result.url,
+            path: result.path,
+            alt: image.alt,
+          })
+        } catch (error: any) {
+          toast.error(`Error al subir imagen: ${error.message}`)
+          // Continuamos con las demás imágenes incluso si una falla
+        }
+      }
+    }
+
+    // Combinar imágenes existentes con las nuevas
+    return [...existingImages, ...newImages]
   }
 
   // Enviar formulario
@@ -323,7 +381,8 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
     for (const field of requiredFields) {
       if (field.includes(".")) {
         const [parent, child] = field.split(".")
-        if (!formData[parent as keyof typeof formData][child]) {
+        const parentObj = formData[parent as keyof typeof formData] as any
+        if (!parentObj[child]) {
           toast.error(`El campo ${child} es requerido`)
           return
         }
@@ -336,28 +395,97 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
     setIsSubmitting(true)
 
     try {
-      const url = initialData?._id ? `/api/admin/products/${initialData._id}` : "/api/admin/products"
+      // Si es un producto nuevo, primero lo creamos para obtener el ID
+      let productId = formData._id
+      let productData = { ...formData }
 
-      const method = initialData?._id ? "PUT" : "POST"
+      // Eliminar las imágenes del objeto de datos para la creación inicial
+      if (!productId) {
+        // Guardar temporalmente las imágenes
+        const tempImages = [...productData.images]
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
+        // Crear una copia del objeto sin las imágenes
+        const productDataWithoutImages = {
+          ...productData,
+          images: [], // Array vacío para la creación inicial
+        }
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || `Error al ${initialData?._id ? "actualizar" : "crear"} el producto`)
+        const response = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(productDataWithoutImages),
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || "Error al crear el producto")
+        }
+
+        const result = await response.json()
+        productId = result.product._id
+
+        console.log("Producto creado con ID:", productId)
+
+        // Ahora subimos las imágenes si hay alguna
+        if (tempImages.length > 0) {
+          console.log("Subiendo imágenes para el producto:", productId)
+          const uploadedImages = await uploadImages(productId)
+
+          // Actualizar el producto con las imágenes subidas
+          if (uploadedImages.length > 0) {
+            console.log("Imágenes subidas:", uploadedImages)
+
+            const updateResponse = await fetch(`/api/admin/products/${productId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                images: uploadedImages,
+              }),
+            })
+
+            if (!updateResponse.ok) {
+              const updateError = await updateResponse.json()
+              console.error("Error al actualizar producto con imágenes:", updateError)
+              toast.error("Las imágenes se subieron pero no se pudieron asociar al producto")
+            }
+          }
+        }
+      } else {
+        // Es una actualización de un producto existente
+
+        // Primero subimos las imágenes nuevas si hay
+        if (productData.images.some((img) => img.isNew)) {
+          const uploadedImages = await uploadImages(productId)
+          productData = {
+            ...productData,
+            images: uploadedImages,
+          }
+        }
+
+        // Actualizamos el producto con todos los datos
+        const response = await fetch(`/api/admin/products/${productId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(productData),
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || "Error al actualizar el producto")
+        }
       }
 
-      toast.success(`Producto ${initialData?._id ? "actualizado" : "creado"} exitosamente`)
+      toast.success(`Producto ${formData._id ? "actualizado" : "creado"} exitosamente`)
       router.push("/admin/products")
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || `Error al ${initialData?._id ? "actualizar" : "crear"} el producto`)
+      toast.error(error.message || `Error al ${formData._id ? "actualizar" : "crear"} el producto`)
     } finally {
       setIsSubmitting(false)
     }
@@ -383,7 +511,13 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
 
             <div className="space-y-2">
               <Label htmlFor="sku">SKU *</Label>
-              <Input id="sku" name="sku" value={formData.sku} onChange={handleChange} required />
+              <div className="flex gap-2">
+                <Input id="sku" name="sku" value={formData.sku} onChange={handleChange} required />
+                <Button type="button" variant="outline" onClick={handleGenerateSKU}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generar
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -434,7 +568,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                 type="number"
                 min="0"
                 step="0.01"
-                value={formData.compareAtPrice}
+                value={formData.compareAtPrice || ""}
                 onChange={handleNumberChange}
               />
             </div>
@@ -501,17 +635,12 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                 id="image"
                 type="file"
                 ref={fileInputRef}
-                onChange={handleImageUpload}
+                onChange={handleImageSelect}
                 accept="image/jpeg,image/png,image/webp"
                 className="hidden"
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-              >
-                {uploadingImage ? "Subiendo..." : "Seleccionar Archivo"}
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                Seleccionar Archivo
                 <Upload className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -532,10 +661,11 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                         variant="destructive"
                         size="icon"
                         className="absolute top-2 right-2"
-                        onClick={() => handleRemoveImage(image.path)}
+                        onClick={() => handleRemoveImage(index)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                      {image.isNew && <Badge className="absolute bottom-2 right-2 bg-amber-500">Vista previa</Badge>}
                     </div>
                   </CardContent>
                 </Card>
@@ -647,7 +777,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                 name="nutritionalInfo.calories"
                 type="number"
                 min="0"
-                value={formData.nutritionalInfo.calories}
+                value={formData.nutritionalInfo.calories || ""}
                 onChange={handleNumberChange}
               />
             </div>
@@ -660,7 +790,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                 type="number"
                 min="0"
                 step="0.1"
-                value={formData.nutritionalInfo.protein}
+                value={formData.nutritionalInfo.protein || ""}
                 onChange={handleNumberChange}
               />
             </div>
@@ -673,7 +803,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                 type="number"
                 min="0"
                 step="0.1"
-                value={formData.nutritionalInfo.carbs}
+                value={formData.nutritionalInfo.carbs || ""}
                 onChange={handleNumberChange}
               />
             </div>
@@ -686,7 +816,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                 type="number"
                 min="0"
                 step="0.1"
-                value={formData.nutritionalInfo.fat}
+                value={formData.nutritionalInfo.fat || ""}
                 onChange={handleNumberChange}
               />
             </div>
