@@ -16,7 +16,7 @@ export interface IProduct extends Document {
     path: string
     alt?: string
   }[]
-  category: string
+  category: mongoose.Types.ObjectId | string
   tags: string[]
   ingredients: string[]
   nutritionalInfo: {
@@ -93,9 +93,9 @@ const ProductSchema = new Schema<IProduct>(
       },
     ],
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
       required: [true, "Por favor seleccione una categoría"],
-      enum: ["proteinas", "creatinas", "pre-entreno", "aminoacidos", "vitaminas", "quemadores", "otros"],
     },
     tags: [String],
     ingredients: [String],
