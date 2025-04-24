@@ -11,7 +11,7 @@ const featuredProducts = [
     name: "Premium Whey Protein",
     description: "25g of protein per serving with essential amino acids",
     price: 49.99,
-    image: "/assorted-protein-powders.png",
+    image: "https://twkldqdlsxiobvhsfwzh.supabase.co/storage/v1/object/public/testimonials//p-1.jpg",
     badge: "Best Seller",
     category: "proteins",
   },

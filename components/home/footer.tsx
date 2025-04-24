@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Github, Linkedin, Twitter, Youtube } from "lucide-react"
+import { FaGithub, FaLinkedin, FaXTwitter, FaYoutube } from "react-icons/fa6";
 
 export default function Footer() {
   return (
@@ -8,21 +9,21 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* Column 1: Products */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold text-gray-900">Products</h3>
+            <h3 className="mb-4 text-sm font-semibold text-gray-900">Productos</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="#" className="text-sm text-gray-600 hover:text-gray-900">
-                  Proteins
+                  Proteinas
                 </Link>
               </li>
               <li>
                 <Link href="#" className="text-sm text-gray-600 hover:text-gray-900">
-                  Creatine
+                  Creatina
                 </Link>
               </li>
               <li>
                 <Link href="#" className="text-sm text-gray-600 hover:text-gray-900">
-                  Pre-workout
+                  Pre-Entrenamiento
                 </Link>
               </li>
               <li>
@@ -76,7 +77,7 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link href="#" className="text-sm text-gray-600 hover:text-gray-900">
-                  About Us
+                  Sobre Nosotros
                 </Link>
               </li>
               <li>
@@ -107,26 +108,26 @@ export default function Footer() {
             <h3 className="mb-4 text-sm font-semibold text-gray-900">Social</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="flex items-center text-sm text-gray-600 hover:text-gray-900">
-                  <Github className="mr-2 h-4 w-4" />
+                <Link href="https://github.com/francozeta/vitaforge" className="flex items-center text-sm text-gray-600 hover:text-gray-900" target="_blank">
+                  <FaGithub className="mr-2 h-4 w-4" />
                   GitHub
                 </Link>
               </li>
               <li>
                 <Link href="#" className="flex items-center text-sm text-gray-600 hover:text-gray-900">
-                  <Linkedin className="mr-2 h-4 w-4" />
+                  <FaLinkedin className="mr-2 h-4 w-4" />
                   LinkedIn
                 </Link>
               </li>
               <li>
                 <Link href="#" className="flex items-center text-sm text-gray-600 hover:text-gray-900">
-                  <Twitter className="mr-2 h-4 w-4" />
+                  <FaXTwitter className="mr-2 h-4 w-4" />
                   Twitter
                 </Link>
               </li>
               <li>
                 <Link href="#" className="flex items-center text-sm text-gray-600 hover:text-gray-900">
-                  <Youtube className="mr-2 h-4 w-4" />
+                  <FaYoutube className="mr-2 h-4 w-4" />
                   YouTube
                 </Link>
               </li>
