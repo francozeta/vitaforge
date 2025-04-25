@@ -22,17 +22,17 @@ export default function ProductsPage({
   const sort = typeof searchParams.sort === "string" ? searchParams.sort : undefined
 
   return (
-    <div className="container px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Productos</h1>
+    <div className="container mx-auto px-4 py-6 md:py-8">
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Productos</h1>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar de filtros */}
-        <div className="w-full md:w-64 flex-shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
+        {/* Sidebar de filtros - ocupa 3 columnas en tablet/desktop */}
+        <div className="md:col-span-3 lg:col-span-2">
           <ProductsFilters selectedCategory={category} />
         </div>
 
-        {/* Lista de productos */}
-        <div className="flex-1">
+        {/* Lista de productos - ocupa 9 columnas en tablet/desktop */}
+        <div className="md:col-span-9 lg:col-span-10">
           <Suspense fallback={<ProductsLoadingSkeleton />}>
             <ProductsList category={category} search={search} page={page} sort={sort} />
           </Suspense>
@@ -44,26 +44,26 @@ export default function ProductsPage({
 
 function ProductsLoadingSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-10 w-[180px]" />
+        <Skeleton className="h-5 w-36 md:h-6 md:w-48" />
+        <Skeleton className="h-9 w-32 md:h-10 md:w-[180px]" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(9)].map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+        {[...Array(8)].map((_, i) => (
           <Card key={i} className="overflow-hidden">
             <div className="relative aspect-square w-full">
               <Skeleton className="absolute inset-0" />
             </div>
-            <div className="p-4">
-              <Skeleton className="h-5 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-full mb-1" />
-              <Skeleton className="h-4 w-4/5 mb-1" />
-              <Skeleton className="h-5 w-1/4 mt-2" />
+            <div className="p-3 md:p-4">
+              <Skeleton className="h-4 md:h-5 w-3/4 mb-2" />
+              <Skeleton className="h-3 md:h-4 w-full mb-1" />
+              <Skeleton className="h-3 md:h-4 w-4/5 mb-1" />
+              <Skeleton className="h-4 md:h-5 w-1/4 mt-2" />
             </div>
-            <div className="p-4 pt-0">
-              <Skeleton className="h-10 w-full" />
+            <div className="px-3 pb-3 md:px-4 md:pb-4">
+              <Skeleton className="h-8 md:h-10 w-full" />
             </div>
           </Card>
         ))}

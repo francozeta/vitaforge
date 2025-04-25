@@ -9,11 +9,12 @@ export async function GET(req: NextRequest) {
     // Obtener parámetros de consulta
     const searchParams = req.nextUrl.searchParams
     const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const limit = Number.parseInt(searchParams.get("limit") || "12")
     const category = searchParams.get("category")
     const search = searchParams.get("search")
     const featured = searchParams.get("featured")
     const active = searchParams.get("active") || "true" // Por defecto solo productos activos
+    const sort = searchParams.get("sort") || "-createdAt" // Por defecto ordenar por más recientes
 
     // Construir filtro
     const filter: any = {}
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     // Obtener productos y contar total
     const [products, total] = await Promise.all([
-      Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Product.find(filter).sort(sort).skip(skip).limit(limit),
       Product.countDocuments(filter),
     ])
 

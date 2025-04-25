@@ -65,7 +65,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   category = category ? JSON.parse(JSON.stringify(category)) : { name: "Sin categoría" }
 
   return (
-    <div className="container px-4 py-8">
+    <div className="container px-4 py-8 mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Galería de imágenes */}
         <div className="space-y-4">

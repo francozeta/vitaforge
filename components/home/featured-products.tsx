@@ -70,7 +70,7 @@ export function FeaturedProducts() {
         {loading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <Card key={i} className="overflow-hidden">
+              <Card key={i} className="overflow-hidden pb-6">
                 <div className="relative aspect-square w-full">
                   <Skeleton className="absolute inset-0" />
                 </div>
