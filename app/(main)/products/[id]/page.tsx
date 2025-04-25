@@ -125,11 +125,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
 
           <div className="border-t pt-6 mt-6">
-            <Tabs defaultValue="description">
-              <TabsList className="w-full grid grid-cols-3">
-                <TabsTrigger value="description">Descripción</TabsTrigger>
-                <TabsTrigger value="nutrition">Información Nutricional</TabsTrigger>
-                <TabsTrigger value="ingredients">Ingredientes</TabsTrigger>
+            <Tabs defaultValue="description" className="w-full">
+              <TabsList className="w-full mb-2">
+                <TabsTrigger value="description" className="flex-1 text-xs sm:text-sm">
+                  Descripción
+                </TabsTrigger>
+                <TabsTrigger value="nutrition" className="flex-1 text-xs sm:text-sm">
+                  Info. Nutricional
+                </TabsTrigger>
+                <TabsTrigger value="ingredients" className="flex-1 text-xs sm:text-sm">
+                  Ingredientes
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="description" className="pt-4">
@@ -140,7 +146,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
               <TabsContent value="nutrition" className="pt-4">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="border p-3 rounded-md">
                       <p className="text-sm text-muted-foreground">Tamaño de porción</p>
                       <p className="font-medium">{product.nutritionalInfo.servingSize}</p>
