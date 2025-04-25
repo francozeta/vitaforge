@@ -263,41 +263,44 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
     }))
   }
 
-  // Manejar selección de imágenes (solo vista previa)
+  // Manejar selección de múltiples imágenes
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
 
-    const file = e.target.files[0]
+    const files = Array.from(e.target.files)
 
-    // Validar tipo de archivo
-    const validTypes = ["image/jpeg", "image/png", "image/webp"]
-    if (!validTypes.includes(file.type)) {
-      toast.error("Tipo de archivo no válido. Solo se permiten JPEG, PNG y WebP")
-      return
+    // Validar cada archivo
+    for (const file of files) {
+      // Validar tipo de archivo
+      const validTypes = ["image/jpeg", "image/png", "image/webp"]
+      if (!validTypes.includes(file.type)) {
+        toast.error(`Tipo de archivo no válido: ${file.name}. Solo se permiten JPEG, PNG y WebP`)
+        continue
+      }
+
+      // Validar tamaño de archivo (máximo 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (file.size > maxSize) {
+        toast.error(`El archivo ${file.name} es demasiado grande. El tamaño máximo es 5MB`)
+        continue
+      }
+
+      // Crear URL temporal para vista previa
+      const imageUrl = URL.createObjectURL(file)
+
+      setFormData((prev) => ({
+        ...prev,
+        images: [
+          ...prev.images,
+          {
+            url: imageUrl,
+            file: file,
+            alt: prev.name || "Imagen de producto",
+            isNew: true,
+          },
+        ],
+      }))
     }
-
-    // Validar tamaño de archivo (máximo 5MB)
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    if (file.size > maxSize) {
-      toast.error("El archivo es demasiado grande. El tamaño máximo es 5MB")
-      return
-    }
-
-    // Crear URL temporal para vista previa
-    const imageUrl = URL.createObjectURL(file)
-
-    setFormData((prev) => ({
-      ...prev,
-      images: [
-        ...prev.images,
-        {
-          url: imageUrl,
-          file: file,
-          alt: prev.name || "Imagen de producto",
-          isNew: true,
-        },
-      ],
-    }))
 
     // Limpiar input de archivo
     if (fileInputRef.current) {
@@ -547,7 +550,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Precio (€) *</Label>
+              <Label htmlFor="price">Precio (PEN) *</Label>
               <Input
                 id="price"
                 name="price"
@@ -561,7 +564,7 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="compareAtPrice">Precio Comparativo (€)</Label>
+              <Label htmlFor="compareAtPrice">Precio Comparativo (PEN)</Label>
               <Input
                 id="compareAtPrice"
                 name="compareAtPrice"
@@ -625,12 +628,17 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
         </TabsContent>
 
         {/* Pestaña Imágenes */}
-        <TabsContent value="images" className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <Label htmlFor="image" className="mr-4">
-                Subir Imagen
-              </Label>
+        <TabsContent value="images" className="space-y-6">
+          <div className="bg-muted/50 p-6 rounded-lg border border-dashed border-muted-foreground/50">
+            <div className="text-center space-y-4">
+              <div className="flex flex-col items-center">
+                <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                <h3 className="text-lg font-medium">Imágenes del producto</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Sube imágenes de tu producto. La primera imagen será la portada.
+                </p>
+              </div>
+
               <input
                 id="image"
                 type="file"
@@ -638,40 +646,60 @@ export default function ProductForm({ initialData, categories }: ProductFormProp
                 onChange={handleImageSelect}
                 accept="image/jpeg,image/png,image/webp"
                 className="hidden"
+                multiple
               />
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                Seleccionar Archivo
-                <Upload className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              {formData.images.map((image, index) => (
-                <Card key={index}>
-                  <CardContent className="p-2">
-                    <div className="relative aspect-square">
-                      <Image
-                        src={image.url || "/placeholder.svg"}
-                        alt={image.alt || "Imagen del producto"}
-                        fill
-                        className="object-cover rounded"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2"
-                        onClick={() => handleRemoveImage(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      {image.isNew && <Badge className="absolute bottom-2 right-2 bg-amber-500">Vista previa</Badge>}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="mx-auto">
+                <Upload className="h-4 w-4 mr-2" />
+                Seleccionar imágenes
+              </Button>
+
+              <p className="text-xs text-muted-foreground">
+                Formatos permitidos: JPEG, PNG, WebP. Tamaño máximo: 5MB por imagen.
+              </p>
             </div>
           </div>
+
+          {formData.images.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Imágenes seleccionadas ({formData.images.length})</h3>
+                {formData.images.length > 1 && (
+                  <p className="text-sm text-muted-foreground">
+                    Arrastra para reordenar. La primera imagen será la portada.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {formData.images.map((image, index) => (
+                  <Card key={index} className={index === 0 ? "border-2 border-emerald-500" : ""}>
+                    <CardContent className="p-2">
+                      <div className="relative aspect-square">
+                        <Image
+                          src={image.url || "/placeholder.svg"}
+                          alt={image.alt || "Imagen del producto"}
+                          fill
+                          className="object-cover rounded"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={() => handleRemoveImage(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        {index === 0 && <Badge className="absolute top-2 left-2 bg-emerald-500">Portada</Badge>}
+                        {image.isNew && <Badge className="absolute bottom-2 right-2 bg-amber-500">Vista previa</Badge>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Pestaña Detalles */}

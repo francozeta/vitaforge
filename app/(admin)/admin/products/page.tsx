@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -75,24 +74,29 @@ export default function ProductsPage() {
       let url = `/api/admin/products?page=${page}&limit=${limit}`
 
       if (search) url += `&search=${encodeURIComponent(search)}`
-      if (categoryFilter) url += `&category=${categoryFilter}`
-      if (featuredFilter) url += `&featured=${featuredFilter}`
-      if (activeFilter) url += `&active=${activeFilter}`
+      if (categoryFilter && categoryFilter !== "all") url += `&category=${categoryFilter}`
+      if (featuredFilter && featuredFilter !== "all") url += `&featured=${featuredFilter}`
+      if (activeFilter && activeFilter !== "all") url += `&active=${activeFilter}`
+
+      console.log("Fetching products from:", url)
 
       const response = await fetch(url)
 
       if (!response.ok) {
-        throw new Error("Error al cargar productos")
+        const errorData = await response.json()
+        console.error("API error response:", errorData)
+        throw new Error(errorData.message || `Error del servidor: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log("Products loaded successfully:", data.products.length)
 
       setProducts(data.products)
       setTotal(data.pagination.total)
       setTotalPages(data.pagination.totalPages)
     } catch (error) {
-      toast.error("Error al cargar productos")
-      console.error(error)
+      console.error("Error details:", error)
+      toast.error("Error al cargar productos: " + (error instanceof Error ? error.message : "Error desconocido"))
     } finally {
       setLoading(false)
     }
@@ -156,9 +160,9 @@ export default function ProductsPage() {
 
   // Formatear precio
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("es-ES", {
+    return new Intl.NumberFormat("es-PE", {
       style: "currency",
-      currency: "EUR",
+      currency: "PEN",
     }).format(price)
   }
 
@@ -170,13 +174,12 @@ export default function ProductsPage() {
 
   return (
     <div className="p-8">
+      {/* Encabezado con título y botón de crear producto */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Productos</h1>
-        <Button asChild>
-          <Link href="/admin/products/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Producto
-          </Link>
+        <Button onClick={() => router.push("/admin/products/create")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nuevo Producto
         </Button>
       </div>
 

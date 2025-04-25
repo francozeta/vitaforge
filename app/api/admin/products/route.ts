@@ -25,13 +25,19 @@ export async function GET(req: NextRequest) {
     const featured = searchParams.get("featured")
     const active = searchParams.get("active")
 
+    console.log("API Request params:", { page, limit, category, search, featured, active })
+
     // Construir filtro
     const filter: any = {}
 
-    if (category) filter.category = category
+    if (category && category !== "all") filter.category = category
     if (search) filter.name = { $regex: search, $options: "i" }
-    if (featured) filter.featured = featured === "true"
-    if (active) filter.isActive = active === "true"
+    if (featured === "true") filter.featured = true
+    if (featured === "false") filter.featured = false
+    if (active === "true") filter.isActive = true
+    if (active === "false") filter.isActive = false
+
+    console.log("MongoDB filter:", filter)
 
     // Calcular skip para paginación
     const skip = (page - 1) * limit
@@ -41,6 +47,8 @@ export async function GET(req: NextRequest) {
       Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
       Product.countDocuments(filter),
     ])
+
+    console.log(`Found ${products.length} products out of ${total} total`)
 
     // Calcular total de páginas
     const totalPages = Math.ceil(total / limit)
@@ -56,7 +64,13 @@ export async function GET(req: NextRequest) {
     })
   } catch (error: any) {
     console.error("Error al obtener productos:", error)
-    return NextResponse.json({ message: error.message || "Error al obtener productos" }, { status: 500 })
+    return NextResponse.json(
+      {
+        message: error.message || "Error al obtener productos",
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
+      { status: 500 },
+    )
   }
 }
 
@@ -73,6 +87,8 @@ export async function POST(req: NextRequest) {
     await dbConnect()
 
     const productData = await req.json()
+
+    console.log("Datos del producto a crear:", JSON.stringify(productData, null, 2))
 
     // Validar datos requeridos
     const requiredFields = ["name", "description", "shortDescription", "price", "sku", "category", "nutritionalInfo"]
