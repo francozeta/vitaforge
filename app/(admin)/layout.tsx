@@ -24,7 +24,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <body
         className={`${geistSans.className} antialiased`}
       >
-
         <div className="flex min-h-screen">
           {/* Sidebar */}
           <AdminSidebar />

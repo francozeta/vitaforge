@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search")
     const featured = searchParams.get("featured")
     const active = searchParams.get("active") || "true" // Por defecto solo productos activos
-    const sort = searchParams.get("sort") || "-createdAt" // Por defecto ordenar por más recientes
 
     // Construir filtro
     const filter: any = {}
@@ -33,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     // Obtener productos y contar total
     const [products, total] = await Promise.all([
-      Product.find(filter).sort(sort).skip(skip).limit(limit),
+      Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
       Product.countDocuments(filter),
     ])
 
