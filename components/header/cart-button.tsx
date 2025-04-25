@@ -1,12 +1,16 @@
+"use client"
+
 import Link from "next/link"
 import { ShoppingBag } from "lucide-react"
+import { useCart } from "@/context/cart-context"
 
 interface CartButtonProps {
-  count: number
   isLoading?: boolean
 }
 
-export function CartButton({ count, isLoading }: CartButtonProps) {
+export function CartButton({ isLoading }: CartButtonProps) {
+  const { itemCount } = useCart()
+
   if (isLoading) {
     return (
       <div className="relative p-2">
@@ -19,12 +23,12 @@ export function CartButton({ count, isLoading }: CartButtonProps) {
   return (
     <Link href="/cart" className="group relative p-2 text-gray-700 hover:text-black">
       <ShoppingBag className="h-6 w-6" />
-      {count > 0 && (
+      {itemCount > 0 && (
         <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black text-xs font-medium text-white group-hover:bg-gray-800">
-          {count}
+          {itemCount}
         </span>
       )}
-      <span className="sr-only">View cart</span>
+      <span className="sr-only">Ver carrito</span>
     </Link>
   )
 }

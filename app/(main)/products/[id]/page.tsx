@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import type { Metadata } from "next"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatCurrency } from "@/lib/utils"
 import dbConnect from "@/lib/db"
 import Product from "@/models/Product"
 import Category from "@/models/Category"
+import AddToCartButton from "@/components/products/add-to-cart-button"
 
 interface ProductPageProps {
   params: {
@@ -119,9 +119,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <p className="text-lg">{product.shortDescription}</p>
 
           <div className="pt-4">
-            <Button size="lg" className="w-full md:w-auto">
-              Añadir al Carrito
-            </Button>
+            <AddToCartButton product={product} />
           </div>
 
           <div className="border-t pt-6 mt-6">
