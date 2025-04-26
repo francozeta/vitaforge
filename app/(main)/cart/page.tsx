@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useCart } from "@/context/cart-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,9 +10,51 @@ import Image from "next/image"
 import Link from "next/link"
 import { Trash2, ArrowLeft, ShoppingBag } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { useSession } from "next-auth/react"
+import { toast } from "sonner"
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, total, itemCount } = useCart()
+  const [isLoading, setIsLoading] = useState(false)
+  const { data: session, status } = useSession()
+
+  // Función para proceder al pago
+  const handleCheckout = async () => {
+    // Verificar si el usuario está autenticado
+    if (status !== "authenticated") {
+      toast.error("Debes iniciar sesión para continuar")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Crear preferencia de pago
+      const response = await fetch("/api/create-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ items }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error al procesar el pago")
+      }
+
+      // Redirigir a Mercado Pago
+      if (data.initPoint) {
+        window.location.href = data.initPoint
+      } else {
+        throw new Error("No se pudo obtener el enlace de pago")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Ocurrió un error al procesar el pago")
+      setIsLoading(false)
+    }
+  }
 
   if (items.length === 0) {
     return (
@@ -131,7 +174,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Envío</span>
-                  <span className="text-right">Calculado en el checkout</span>
+                  <span className="text-right">Gratis</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold">
@@ -141,7 +184,9 @@ export default function CartPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full text-sm md:text-base">Proceder al pago</Button>
+              <Button className="w-full text-sm md:text-base" onClick={handleCheckout} disabled={isLoading}>
+                {isLoading ? "Procesando..." : "Proceder al pago"}
+              </Button>
             </CardFooter>
           </Card>
         </div>
