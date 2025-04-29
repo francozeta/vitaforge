@@ -134,7 +134,7 @@ export function MobileMenu({ isOpen, onClose, isAuthenticated, userRole, userNam
             ) : isAuthenticated ? (
               <>
                 <Link
-                  href={userRole === "admin" ? "/admin/dashboard" : "/profile"}
+                  href='/profile'
                   className="flex items-center justify-between py-3 px-2 border-b border-neutral-100"
                   onClick={onClose}
                 >

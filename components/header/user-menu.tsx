@@ -52,7 +52,7 @@ export function UserMenu({ userName, userRole }: UserMenuProps) {
           </div>
 
           <Link
-            href={userRole === "admin" ? "/admin/dashboard" : "/profile"}
+            href='/profile'
             className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             onClick={() => setIsOpen(false)}
             role="menuitem"

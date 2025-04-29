@@ -66,7 +66,7 @@ interface ProductFormProps {
   categories: Category[]
 }
 
-export default function ProductForm({ initialData, categories }: ProductFormProps) {
+  export default function  ProductForm({ initialData, categories }: ProductFormProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)

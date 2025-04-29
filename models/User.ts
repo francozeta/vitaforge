@@ -58,6 +58,7 @@ const UserSchema = new Schema<IUser>(
         state: String,
         postalCode: String,
         country: String,
+        phone: String,
         isDefault: {
           type: Boolean,
           default: false,
