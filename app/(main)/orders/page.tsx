@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 import Link from "next/link"
-import { ChevronRight, ChevronLeft, ShoppingBag } from "lucide-react"
+import { ChevronRight, ChevronLeft, ShoppingBag, Archive } from "lucide-react"
 
 interface Order {
   _id: string
@@ -131,7 +131,7 @@ export default function OrdersPage() {
         <Card className="text-center py-12">
           <CardContent>
             <div className="flex flex-col items-center gap-4">
-              <ShoppingBag className="h-12 w-12 text-muted-foreground" />
+              <Archive className="h-12 w-12 text-neutral-900" />
               <h2 className="text-xl font-semibold">No tienes pedidos</h2>
               <p className="text-muted-foreground">Aún no has realizado ningún pedido.</p>
               <Button asChild className="mt-4">

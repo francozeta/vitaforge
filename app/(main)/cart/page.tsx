@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useCart } from "@/context/cart-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,17 +8,56 @@ import { QuantitySelector } from "@/components/ui/quantity-selector"
 import { formatCurrency } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
-import { Trash2, ArrowLeft, ShoppingBag } from "lucide-react"
+import { Trash2, ArrowLeft, ShoppingBag, MapPin } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
+import { getUserData } from "@/app/(main)/actions/user-actions"
+
+// Interfaz para la dirección de envío
+interface ShippingAddress {
+  id: string
+  street: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+  phone: string
+  isDefault: boolean
+}
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, total, itemCount } = useCart()
+  const { items, updateQuantity, removeItem, total, itemCount, clearCart } = useCart()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false)
   const { data: session, status } = useSession()
+  const [defaultAddress, setDefaultAddress] = useState<ShippingAddress | null>(null)
 
-  // Función para proceder al pago
+  // Cargar la dirección predeterminada del usuario
+  useEffect(() => {
+    const loadDefaultAddress = async () => {
+      if (status === "authenticated") {
+        setIsLoadingAddress(true)
+        try {
+          const userData = await getUserData()
+          if (userData && userData.shippingAddresses && userData.shippingAddresses.length > 0) {
+            // Buscar la dirección predeterminada
+            const defaultAddr =
+              userData.shippingAddresses.find((addr) => addr.isDefault) || userData.shippingAddresses[0]
+            setDefaultAddress(defaultAddr)
+          }
+        } catch (error) {
+          console.error("Error al cargar la dirección predeterminada:", error)
+        } finally {
+          setIsLoadingAddress(false)
+        }
+      }
+    }
+
+    loadDefaultAddress()
+  }, [status])
+
+  // Función para proceder al pago directamente
   const handleCheckout = async () => {
     // Verificar si el usuario está autenticado
     if (status !== "authenticated") {
@@ -26,16 +65,35 @@ export default function CartPage() {
       return
     }
 
+    // Verificar si el usuario tiene una dirección predeterminada
+    if (!defaultAddress) {
+      toast.error("Necesitas añadir una dirección de envío antes de continuar")
+      // Redirigir al usuario a la página de perfil para añadir una dirección
+      window.location.href = "/profile"
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      // Crear preferencia de pago
-      const response = await fetch("/api/create-payment", {
+      // Crear preferencia de pago con la dirección predeterminada
+      const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({
+          items,
+          shippingAddress: {
+            name: session.user.name || "",
+            address: defaultAddress.street,
+            city: defaultAddress.city,
+            province: defaultAddress.state,
+            postalCode: defaultAddress.postalCode,
+            phone: defaultAddress.phone || "",
+          },
+          totalAmount: total,
+        }),
       })
 
       const data = await response.json()
@@ -46,12 +104,25 @@ export default function CartPage() {
 
       // Redirigir a Mercado Pago
       if (data.initPoint) {
+        // Guardar el orderId en localStorage si existe
+        if (data.orderId) {
+          /* console.log("Guardando orderId en localStorage:", data.orderId) */
+          localStorage.setItem("currentOrderId", data.orderId)
+        } else {
+         /*  console.warn("No se recibió orderId del servidor") */
+        }
+
+        // Limpiar el carrito antes de redirigir
+        clearCart()
+
+        // Redirigir a la página de pago de Mercado Pago
         window.location.href = data.initPoint
       } else {
         throw new Error("No se pudo obtener el enlace de pago")
       }
     } catch (error: any) {
       toast.error(error.message || "Ocurrió un error al procesar el pago")
+    } finally {
       setIsLoading(false)
     }
   }
@@ -63,7 +134,7 @@ export default function CartPage() {
         <Card className="text-center py-12">
           <CardContent>
             <div className="flex flex-col items-center gap-4">
-              <ShoppingBag className="h-12 w-12 text-muted-foreground" />
+              <ShoppingBag className="h-12 w-12 ext-neutral-900" />
               <h2 className="text-xl font-semibold">Tu carrito está vacío</h2>
               <p className="text-muted-foreground">Parece que aún no has añadido productos a tu carrito.</p>
               <Button asChild className="mt-4">
@@ -182,9 +253,55 @@ export default function CartPage() {
                   <span>{formatCurrency(total)}</span>
                 </div>
               </div>
+
+              {/* Mostrar información de la dirección de envío si está disponible */}
+              {defaultAddress && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-1 mb-2">
+                    <MapPin className="h-4 w-4" />
+                    <p className="font-medium">Dirección de envío:</p>
+                  </div>
+                  <p className="text-sm">{defaultAddress.street}</p>
+                  <p className="text-sm">
+                    {defaultAddress.city}, {defaultAddress.state} {defaultAddress.postalCode}
+                  </p>
+                  <p className="text-sm">{defaultAddress.country}</p>
+                  {defaultAddress.phone && <p className="text-sm">Tel: {defaultAddress.phone}</p>}
+                  <Button variant="link" size="sm" className="p-0 h-auto mt-1" asChild>
+                    <Link href="/profile">Cambiar dirección</Link>
+                  </Button>
+                </div>
+              )}
+
+              {/* Mostrar mensaje si no hay dirección */}
+              {status === "authenticated" && !defaultAddress && !isLoadingAddress && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-1 mb-2 text-amber-600">
+                    <MapPin className="h-4 w-4" />
+                    <p className="font-medium">No tienes dirección de envío</p>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Necesitas añadir una dirección de envío antes de continuar con la compra.
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full" asChild>
+                    <Link href="/profile">Añadir dirección</Link>
+                  </Button>
+                </div>
+              )}
+
+              {/* Mostrar cargando si está obteniendo la dirección */}
+              {isLoadingAddress && (
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm text-gray-600">Cargando dirección de envío...</p>
+                </div>
+              )}
             </CardContent>
             <CardFooter>
-              <Button className="w-full text-sm md:text-base" onClick={handleCheckout} disabled={isLoading}>
+              <Button
+                className="w-full text-sm md:text-base"
+                onClick={handleCheckout}
+                disabled={isLoading || !defaultAddress || status !== "authenticated"}
+              >
                 {isLoading ? "Procesando..." : "Proceder al pago"}
               </Button>
             </CardFooter>

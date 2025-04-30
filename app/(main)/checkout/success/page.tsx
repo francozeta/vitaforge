@@ -14,6 +14,8 @@ export default function CheckoutSuccessPage() {
   useEffect(() => {
     // Recuperar el ID de la orden del localStorage
     const storedOrderId = localStorage.getItem("currentOrderId")
+    console.log("OrderId recuperado del localStorage:", storedOrderId)
+
     if (storedOrderId) {
       setOrderId(storedOrderId)
       // Limpiar el localStorage

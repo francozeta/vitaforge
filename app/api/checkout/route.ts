@@ -42,7 +42,9 @@ export async function POST(req: Request) {
     console.log("Orden creada con ID:", order._id)
 
     // Crear preferencia de pago en Mercado Pago
-    const preference = await createPaymentPreference(items, session.user.id, order._id.toString())
+    // Asegurarnos de que _id existe y convertirlo a string de forma segura
+    const orderId = order._id ? order._id.toString() : undefined
+    const preference = await createPaymentPreference(items, session.user.id, orderId)
 
     console.log("Preferencia de pago creada:", {
       preferenceId: preference.id,
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      orderId: order._id,
+      orderId: orderId,
       preferenceId: preference.id,
       initPoint: preference.init_point,
     })

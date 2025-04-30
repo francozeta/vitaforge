@@ -29,7 +29,9 @@ interface OrderItem {
 }
 
 // Definir la interfaz para el documento de Order
+// Modificar la interfaz OrderDocument para incluir explícitamente _id
 export interface OrderDocument extends Document {
+  _id: mongoose.Types.ObjectId // Añadir esta línea explícitamente
   user: mongoose.Schema.Types.ObjectId
   items: OrderItem[]
   shippingAddress: ShippingAddress
