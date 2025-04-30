@@ -5,6 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import AdminSidebar from "@/components/admin/admin-sidebar"
 import { Geist } from "next/font/google"
 import "@/app/globals.css";
+import AuthProvider from "@/components/providers/auth-provider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,13 +25,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <body
         className={`${geistSans.className} antialiased`}
       >
-        <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <AdminSidebar />
+        <AuthProvider>
 
-          {/* Contenido principal */}
-          <main className="flex-1 overflow-auto">{children}</main>
-        </div>
+          <div className="flex min-h-screen">
+            {/* Sidebar */}
+            <AdminSidebar />
+
+            {/* Contenido principal */}
+            <main className="flex-1 overflow-auto">{children}</main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

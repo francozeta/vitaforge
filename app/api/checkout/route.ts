@@ -22,6 +22,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Datos incompletos para crear el pedido" }, { status: 400 })
     }
 
+    console.log("Creando orden con los siguientes datos:", {
+      userId: session.user.id,
+      items: items.length,
+      shippingAddress,
+      totalAmount,
+    })
+
     // Crear orden en la base de datos
     const order = await Order.create({
       user: session.user.id,
@@ -32,8 +39,15 @@ export async function POST(req: Request) {
       paymentStatus: "pending",
     })
 
+    console.log("Orden creada con ID:", order._id)
+
     // Crear preferencia de pago en Mercado Pago
     const preference = await createPaymentPreference(items, session.user.id, order._id.toString())
+
+    console.log("Preferencia de pago creada:", {
+      preferenceId: preference.id,
+      initPoint: preference.init_point,
+    })
 
     return NextResponse.json({
       success: true,
