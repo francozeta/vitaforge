@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { signOut } from "next-auth/react"
 import { EditProfileForm } from "@/components/profile/edit-profile-form"
 import { AddressList } from "@/components/profile/address-list"
+import { OrderList } from "@/components/profile/order-list"
 import { ProfileSkeleton } from "@/components/profile/profile-skeleton"
 
 export default function ProfilePage() {
@@ -62,7 +63,7 @@ export default function ProfilePage() {
 
                 <div>
                   <p className="text-sm font-medium text-gray-500">Email</p>
-                  <p className="text-base truncate">{userData?.email || session?.user?.email}</p>
+                  <p className="text-base break-all">{userData?.email || session?.user?.email}</p>
                 </div>
 
                 <div>
@@ -70,9 +71,9 @@ export default function ProfilePage() {
                   <p className="text-base capitalize">{userData?.role || session?.user?.role || "cliente"}</p>
                 </div>
 
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-4 text-sm" 
+                <Button
+                  variant="outline"
+                  className="w-full mt-4 text-sm"
                   onClick={() => signOut({ callbackUrl: "/" })}
                   size="sm"
                 >
@@ -100,7 +101,7 @@ export default function ProfilePage() {
               <CardDescription>Revisa tus pedidos anteriores</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500">No tienes pedidos anteriores.</p>
+              <OrderList />
             </CardContent>
           </Card>
         </div>

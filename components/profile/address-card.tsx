@@ -61,7 +61,7 @@ export function AddressCard({ address, onDeleted }: AddressCardProps) {
   return (
     <div className="border rounded-lg p-4 relative">
       {address.isDefault && (
-        <Badge className="absolute top-2 right-2 bg-neutral-900 p-2 ">
+        <Badge className="absolute top-2 right-2 bg-neutral-900 rounded-full ">
           <span className="hidden lg:inline">Predeterminada</span>
           <Home className="text-2xl lg:hidden" />
         </Badge>

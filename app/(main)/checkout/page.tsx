@@ -1,4 +1,4 @@
-"use client"
+/* "use client"
 
 import type React from "react"
 
@@ -263,4 +263,111 @@ export default function CheckoutPage() {
       </div>
     </div>
   )
+}
+ */
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useCart } from "@/context/cart-context"
+import { toast } from "sonner"
+import { useSession } from "next-auth/react"
+
+export default function CheckoutPage() {
+  const { items, total, clearCart } = useCart()
+  const [isLoading, setIsLoading] = useState(false)
+  const [shippingAddress, setShippingAddress] = useState({
+    name: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    province: "",
+    phone: "",
+  })
+  const router = useRouter()
+  const { data: session } = useSession()
+
+  // Redirigir si el carrito está vacío
+  if (items.length === 0) {
+    router.push("/cart")
+    return null
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setShippingAddress((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      // Validar formulario
+      const requiredFields = ["name", "address", "city", "postalCode", "province", "phone"]
+      for (const field of requiredFields) {
+        if (!shippingAddress[field as keyof typeof shippingAddress]) {
+          toast.error(`El campo ${field} es requerido`)
+          setIsLoading(false)
+          return
+        }
+      }
+
+      // Verificar si el usuario está autenticado
+      if (!session?.user) {
+        toast.error("Debes iniciar sesión para continuar")
+        router.push("/auth/login?callbackUrl=/checkout")
+        return
+      }
+
+      console.log("Enviando datos al servidor:", {
+        items: items.length,
+        shippingAddress,
+        totalAmount: total,
+      })
+
+      // Enviar datos al servidor
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items,
+          shippingAddress,
+          totalAmount: total,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error al procesar el pago")
+      }
+
+      console.log("Respuesta del servidor:", data)
+
+      // Redirigir a Mercado Pago
+      if (data.initPoint) {
+        // Guardar el ID de la orden en localStorage para recuperarlo después
+        localStorage.setItem("currentOrderId", data.orderId)
+        // Limpiar el carrito antes de redirigir
+        clearCart()
+        // Redirigir a la página de pago de Mercado Pago
+        window.location.href = data.initPoint
+      } else {
+        throw new Error("No se pudo obtener el enlace de pago")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Ocurrió un error al procesar el pago")
+      setIsLoading(false)
+    }
+  }
+
+  // Resto del componente...
 }

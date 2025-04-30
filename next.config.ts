@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "twkldqdlsxiobvhsfwzh.supabase.co",
       },
+      {
+        protocol: "https",
+        hostname: "http2.mlstatic.com",
+      }
     ]
   }
 };

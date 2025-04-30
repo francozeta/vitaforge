@@ -7,15 +7,21 @@ const mercadopago = new MercadoPagoConfig({
 })
 
 // Función para crear una preferencia de pago
-export async function createPaymentPreference(items: CartItem[], userId: string) {
+export async function createPaymentPreference(items: CartItem[], userId: string, orderId?: string) {
   try {
+    console.log("Creando preferencia de pago con:", {
+      items: items.length,
+      userId,
+      orderId: orderId || "no disponible",
+    })
+
     // Convertir los items del carrito al formato esperado por Mercado Pago
     const mpItems = items.map((item) => ({
       id: item._id,
       title: item.name,
       quantity: item.quantity,
       unit_price: item.price,
-      currency_id: "ARS", // Ajusta según tu moneda
+      currency_id: "PEN", // Moneda peruana (soles)
       description: `${item.name}`,
       picture_url: item.image || "",
     }))
@@ -31,10 +37,16 @@ export async function createPaymentPreference(items: CartItem[], userId: string)
         },
         auto_return: "approved",
         metadata: {
-          userId,
+          userId: userId,
+          ...(orderId && { orderId: orderId }),
         },
         notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mercadopago`,
       },
+    })
+
+    console.log("Preferencia creada:", {
+      id: preference.id,
+      init_point: preference.init_point?.substring(0, 50) + "...",
     })
 
     return preference
@@ -47,8 +59,16 @@ export async function createPaymentPreference(items: CartItem[], userId: string)
 // Función para verificar un pago
 export async function verifyPayment(paymentId: string) {
   try {
+    console.log("Verificando pago:", paymentId)
     const { Payment } = await import("mercadopago")
     const payment = await new Payment(mercadopago).get({ id: paymentId })
+
+    console.log("Pago verificado:", {
+      status: payment.status,
+      transaction_amount: payment.transaction_amount,
+      metadata: payment.metadata,
+    })
+
     return payment
   } catch (error) {
     console.error("Error al verificar pago:", error)

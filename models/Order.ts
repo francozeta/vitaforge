@@ -1,4 +1,4 @@
-import mongoose, { Schema, type Document } from "mongoose"
+import mongoose, { Schema, type Document, type Model } from "mongoose"
 
 // Definir la interfaz para los detalles de pago
 interface PaymentDetails {
@@ -92,4 +92,6 @@ const OrderSchema = new Schema<OrderDocument>(
 )
 
 // Crear y exportar el modelo
-export default mongoose.models.Order || mongoose.model<OrderDocument>("Order", OrderSchema)
+const Order: Model<OrderDocument> = mongoose.models.Order || mongoose.model<OrderDocument>("Order", OrderSchema)
+
+export default Order

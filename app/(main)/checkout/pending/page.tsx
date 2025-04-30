@@ -1,31 +1,34 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { Clock } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Clock, ShoppingBag } from "lucide-react"
 
 export default function CheckoutPendingPage() {
-  const router = useRouter()
-
   return (
-    <div className="container mx-auto py-16 px-4 flex justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+    <div className="container mx-auto py-10 px-4 max-w-2xl">
+      <Card className="text-center py-8">
+        <CardHeader>
           <div className="flex justify-center mb-4">
             <Clock className="h-16 w-16 text-yellow-500" />
           </div>
-          <CardTitle className="text-2xl">Pago pendiente</CardTitle>
+          <CardTitle className="text-2xl">Pago Pendiente</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-center text-gray-600">
-            Tu pago está siendo procesado. Te notificaremos cuando se complete.
+        <CardContent>
+          <p className="text-gray-600 mb-6">
+            Tu pago está siendo procesado. Una vez que se complete, actualizaremos el estado de tu pedido.
           </p>
 
-          <div className="flex flex-col space-y-2">
-            <Button onClick={() => router.push("/account/orders")}>Ver mis pedidos</Button>
-            <Button variant="outline" onClick={() => router.push("/")}>
-              Volver a la tienda
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild variant="outline">
+              <Link href="/orders" className="flex items-center">
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Ver mis pedidos
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/products">Seguir comprando</Link>
             </Button>
           </div>
         </CardContent>
