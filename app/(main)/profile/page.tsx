@@ -1,18 +1,46 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useAuth } from "@/hooks/use-auth"
+import { getUserData } from "@/app/(main)/actions/user-actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { signOut } from "next-auth/react"
-import { Loader2 } from "lucide-react"
+import { EditProfileForm } from "@/components/profile/edit-profile-form"
+import { AddressList } from "@/components/profile/address-list"
+import { ProfileSkeleton } from "@/components/profile/profile-skeleton"
 
 export default function ProfilePage() {
-  const { session, isLoading } = useAuth({ required: true })
+  const { session, isLoading: authLoading } = useAuth({ required: true })
+  const [userData, setUserData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  if (isLoading) {
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (session?.user) {
+        try {
+          const data = await getUserData()
+          setUserData(data)
+        } catch (error) {
+          console.error("Error al cargar datos del usuario:", error)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    if (!authLoading && session) {
+      loadUserData()
+    } else if (!authLoading) {
+      setIsLoading(false)
+    }
+  }, [session, authLoading])
+
+  if (authLoading || isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+      <div className="container mx-auto py-10 px-4">
+        <h1 className="text-3xl font-bold mb-6">Mi Perfil</h1>
+        <ProfileSkeleton />
       </div>
     )
   }
@@ -23,26 +51,31 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <Card>
+          <Card className="py-5">
             <CardHeader>
               <CardTitle>Información Personal</CardTitle>
               <CardDescription>Gestiona tu información personal</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Nombre</p>
-                  <p className="text-base">{session?.user?.name}</p>
-                </div>
+                <EditProfileForm initialName={userData?.name || session?.user?.name || ""} />
+
                 <div>
                   <p className="text-sm font-medium text-gray-500">Email</p>
-                  <p className="text-base">{session?.user?.email}</p>
+                  <p className="text-base truncate">{userData?.email || session?.user?.email}</p>
                 </div>
+
                 <div>
                   <p className="text-sm font-medium text-gray-500">Tipo de cuenta</p>
-                  <p className="text-base capitalize">{session?.user?.role}</p>
+                  <p className="text-base capitalize">{userData?.role || session?.user?.role || "cliente"}</p>
                 </div>
-                <Button variant="outline" className="w-full mt-4" onClick={() => signOut({ callbackUrl: "/" })}>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4 text-sm" 
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  size="sm"
+                >
                   Cerrar Sesión
                 </Button>
               </div>
@@ -51,18 +84,17 @@ export default function ProfilePage() {
         </div>
 
         <div className="md:col-span-2">
-          <Card>
+          <Card className="py-5">
             <CardHeader>
               <CardTitle>Direcciones de Envío</CardTitle>
               <CardDescription>Gestiona tus direcciones de envío</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500 mb-4">No tienes direcciones de envío guardadas.</p>
-              <Button className="bg-emerald-600 hover:bg-emerald-700">Añadir Dirección</Button>
+              <AddressList />
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
+          <Card className="mt-6 py-5">
             <CardHeader>
               <CardTitle>Historial de Pedidos</CardTitle>
               <CardDescription>Revisa tus pedidos anteriores</CardDescription>

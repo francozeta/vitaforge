@@ -1,20 +1,25 @@
 import mongoose, { type Document, type Model, Schema } from "mongoose"
 import bcrypt from "bcryptjs"
 
+// Definimos una interfaz para la dirección de envío
+export interface IShippingAddress {
+  _id?: mongoose.Types.ObjectId
+  street: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+  phone: string
+  isDefault: boolean
+}
+
 export interface IUser extends Document {
   name: string
   email: string
   password: string
   role: "admin" | "customer"
   isActive: boolean
-  shippingAddresses: Array<{
-    street: string
-    city: string
-    state: string
-    postalCode: string
-    country: string
-    isDefault: boolean
-  }>
+  shippingAddresses: Array<IShippingAddress>
   createdAt: Date
   updatedAt: Date
   comparePassword(candidatePassword: string): Promise<boolean>
