@@ -6,6 +6,7 @@ import AdminSidebar from "@/components/admin/admin-sidebar"
 import { Geist } from "next/font/google"
 import "@/app/globals.css";
 import AuthProvider from "@/components/providers/auth-provider"
+import { Toaster } from "@/components/ui/sonner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
             {/* Contenido principal */}
             <main className="flex-1 overflow-auto">{children}</main>
+            <Toaster position="bottom-right" />
           </div>
         </AuthProvider>
       </body>
