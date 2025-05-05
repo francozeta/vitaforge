@@ -15,26 +15,35 @@ interface ProductPageProps {
   }
 }
 
-// Generar metadatos dinámicos
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  await dbConnect()
+// Optimize the product detail page for better performance and responsiveness
 
+// Add proper error handling to the generateMetadata function
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   try {
+    await dbConnect()
     const product = await Product.findById(params.id)
 
     if (!product) {
       return {
         title: "Producto no encontrado | VitaForge",
+        description: "El producto que buscas no existe o ha sido eliminado.",
       }
     }
 
     return {
       title: `${product.name} | VitaForge`,
-      description: product.shortDescription,
+      description: product.shortDescription || "Descubre este producto en VitaForge",
+      openGraph: {
+        title: product.name,
+        description: product.shortDescription,
+        images: product.images?.[0]?.url ? [{ url: product.images[0].url }] : [],
+      },
     }
   } catch (error) {
+    console.error("Error generating metadata:", error)
     return {
       title: "Producto | VitaForge",
+      description: "Descubre nuestros productos de alta calidad",
     }
   }
 }
@@ -93,6 +102,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 25vw, 12vw"
+                    loading="lazy"
                   />
                 </div>
               ))}
@@ -101,9 +111,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
 
         {/* Información del producto */}
-        <div className="space-y-6">
+        <div className="space-y-5 md:space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">{product.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{product.name}</h1>
             <p className="text-muted-foreground mt-1">Categoría: {category.name}</p>
           </div>
 
@@ -116,22 +126,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </div>
 
-          <p className="text-lg">{product.shortDescription}</p>
+          <p className="text-base md:text-lg">{product.shortDescription}</p>
 
           <div className="pt-4">
             <AddToCartButton product={product} />
           </div>
 
-          <div className="border-t pt-6 mt-6">
+          <div className="border-t pt-5 md:pt-6 mt-5 md:mt-6">
             <Tabs defaultValue="description" className="w-full">
-              <TabsList className="w-full mb-2">
-                <TabsTrigger value="description" className="flex-1 text-xs sm:text-sm">
+              <TabsList className="w-full mb-2 grid grid-cols-3">
+                <TabsTrigger value="description" className="text-xs sm:text-sm">
                   Descripción
                 </TabsTrigger>
-                <TabsTrigger value="nutrition" className="flex-1 text-xs sm:text-sm">
+                <TabsTrigger value="nutrition" className="text-xs sm:text-sm">
                   Info. Nutricional
                 </TabsTrigger>
-                <TabsTrigger value="ingredients" className="flex-1 text-xs sm:text-sm">
+                <TabsTrigger value="ingredients" className="text-xs sm:text-sm">
                   Ingredientes
                 </TabsTrigger>
               </TabsList>
