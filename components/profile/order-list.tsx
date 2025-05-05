@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 import Link from "next/link"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, RefreshCw } from "lucide-react"
 
 interface Order {
   _id: string
@@ -24,25 +24,31 @@ interface Order {
 
 export function OrderList() {
   const [orders, setOrders] = useState<Order[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await fetch("/api/orders?limit=5")
-        const data = await response.json()
-        setOrders(data.orders)
-      } catch (error) {
-        console.error("Error al cargar órdenes:", error)
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchOrders = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/orders?limit=5")
+      const data = await response.json()
+      setOrders(data.orders)
+    } catch (error) {
+      console.error("Error al cargar órdenes:", error)
+    } finally {
+      setIsLoading(false)
+      setInitialLoadDone(true)
     }
+  }
 
-    fetchOrders()
-  }, [])
+  // Cargar órdenes solo una vez al montar el componente
+  useEffect(() => {
+    if (!initialLoadDone) {
+      fetchOrders()
+    }
+  }, [initialLoadDone])
 
-  if (isLoading) {
+  if (isLoading && !initialLoadDone) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-[100px] w-full rounded-lg" />
@@ -51,10 +57,20 @@ export function OrderList() {
     )
   }
 
-  if (orders.length === 0) {
+  if (initialLoadDone && orders.length === 0) {
     return (
       <div className="text-center py-6">
         <p className="text-gray-500">No tienes pedidos anteriores.</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchOrders}
+          disabled={isLoading}
+          className="mt-4 flex items-center gap-1"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          {isLoading ? "Actualizando..." : "Actualizar"}
+        </Button>
       </div>
     )
   }
@@ -107,6 +123,20 @@ export function OrderList() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Pedidos recientes</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fetchOrders}
+          disabled={isLoading}
+          className="flex items-center gap-1"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          <span className="sr-only">Actualizar</span>
+        </Button>
+      </div>
+
       {orders.map((order) => (
         <Card key={order._id} className="overflow-hidden">
           <CardContent className="p-0">
