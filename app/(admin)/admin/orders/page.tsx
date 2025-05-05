@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 import Link from "next/link"
-import { ChevronRight, ChevronLeft, Package, Filter } from "lucide-react"
+import { ChevronRight, ChevronLeft, Package, Filter, RefreshCw } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface OrderItem {
@@ -40,7 +40,6 @@ interface Pagination {
 }
 
 export default function AdminOrdersPage() {
-  // Cambiar adminOnly por requiredRole: "admin"
   const { session, isLoading: authLoading } = useAuth({ required: true, requiredRole: "admin" })
   const [orders, setOrders] = useState<Order[]>([])
   const [pagination, setPagination] = useState<Pagination>({
@@ -49,14 +48,21 @@ export default function AdminOrdersPage() {
     limit: 10,
     pages: 0,
   })
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>("")
 
+  // Función para cargar órdenes manualmente
   const fetchOrders = async (page = 1, status = statusFilter) => {
+    if (isLoading) return
+
     setIsLoading(true)
+    setLoadError(null)
+
     try {
       let url = `/api/admin/orders?page=${page}&limit=10`
-      if (status) {
+      if (status && status !== "all") {
         url += `&status=${status}`
       }
 
@@ -71,16 +77,19 @@ export default function AdminOrdersPage() {
       setPagination(data.pagination)
     } catch (error) {
       console.error("Error al cargar órdenes:", error)
+      setLoadError("No se pudieron cargar los pedidos. Intenta de nuevo más tarde.")
     } finally {
       setIsLoading(false)
+      setInitialLoadDone(true)
     }
   }
 
+  // Cargar órdenes solo una vez al montar el componente
   useEffect(() => {
-    if (!authLoading && session && session.user.role === "admin") {
+    if (!authLoading && session && session.user.role === "admin" && !initialLoadDone) {
       fetchOrders()
     }
-  }, [session, authLoading])
+  }, [session, authLoading, initialLoadDone])
 
   const handlePageChange = (newPage: number) => {
     fetchOrders(newPage)
@@ -91,7 +100,7 @@ export default function AdminOrdersPage() {
     fetchOrders(1, value)
   }
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="container mx-auto py-10 px-4">
         <div className="flex justify-between items-center mb-6">
@@ -107,7 +116,7 @@ export default function AdminOrdersPage() {
     )
   }
 
-  // Verificar si el usuario es administrador (también actualizar esta parte)
+  // Verificar si el usuario es administrador
   if (!authLoading && session && session.user?.role !== "admin") {
     return (
       <div className="container mx-auto py-10 px-4">
@@ -123,6 +132,23 @@ export default function AdminOrdersPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  // Mostrar pantalla de carga inicial
+  if (isLoading && !initialLoadDone) {
+    return (
+      <div className="container mx-auto py-10 px-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Gestión de Pedidos</h1>
+          <Skeleton className="h-10 w-40" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-[150px] w-full rounded-lg" />
+          <Skeleton className="h-[150px] w-full rounded-lg" />
+          <Skeleton className="h-[150px] w-full rounded-lg" />
+        </div>
       </div>
     )
   }
@@ -173,11 +199,52 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // Mostrar mensaje de error si hay algún problema
+  if (loadError) {
+    return (
+      <div className="container mx-auto py-10 px-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Gestión de Pedidos</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchOrders()}
+            disabled={isLoading}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            {isLoading ? "Actualizando..." : "Actualizar"}
+          </Button>
+        </div>
+        <Card className="text-center py-12">
+          <CardContent>
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-red-500">{loadError}</p>
+              <Button onClick={() => fetchOrders()} disabled={isLoading}>
+                {isLoading ? "Cargando..." : "Intentar de nuevo"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto py-10 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Gestión de Pedidos</h1>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchOrders(pagination.page, statusFilter)}
+            disabled={isLoading}
+            className="flex items-center gap-1 mr-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            {isLoading ? "Actualizando..." : "Actualizar"}
+          </Button>
           <Filter className="h-4 w-4 text-gray-500" />
           <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
             <SelectTrigger className="w-[180px]">
@@ -273,7 +340,7 @@ export default function AdminOrdersPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
+                disabled={pagination.page === 1 || isLoading}
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Anterior
@@ -284,6 +351,7 @@ export default function AdminOrdersPage() {
                   variant={pagination.page === i + 1 ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePageChange(i + 1)}
+                  disabled={isLoading}
                   className="w-8 h-8 p-0"
                 >
                   {i + 1}
@@ -293,7 +361,7 @@ export default function AdminOrdersPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.pages}
+                disabled={pagination.page === pagination.pages || isLoading}
               >
                 Siguiente
                 <ChevronRight className="h-4 w-4 ml-1" />
