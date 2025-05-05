@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import dbConnect from "@/lib/db"
 import Product from "@/models/Product"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function GET(req: NextRequest) {
   try {
@@ -54,6 +56,39 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         message: error.message || "Error al obtener productos",
+      },
+      { status: 500 },
+    )
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    // Verificar si el usuario es administrador
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 })
+    }
+
+    await dbConnect()
+
+    // Obtener datos del producto del cuerpo de la solicitud
+    const productData = await req.json()
+
+    // Crear nuevo producto
+    const product = new Product(productData)
+    await product.save()
+
+    return NextResponse.json({
+      message: "Producto creado exitosamente",
+      product,
+    })
+  } catch (error: any) {
+    console.error("Error al crear producto:", error)
+    return NextResponse.json(
+      {
+        message: error.message || "Error al crear producto",
       },
       { status: 500 },
     )
