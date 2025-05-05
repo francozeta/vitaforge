@@ -5,12 +5,12 @@ import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 import Link from "next/link"
 import Image from "next/image"
-import { ChevronLeft, Package, Truck, CreditCard } from "lucide-react"
+import { ChevronLeft, Package, Truck, CreditCard, RefreshCw } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
+import { OrderDetailSkeleton } from "@/components/skeletons/order-detail-skeleton"
 
 interface OrderItem {
   _id: string
@@ -51,42 +51,67 @@ interface Order {
 export default function OrderDetailsPage() {
   const { session, isLoading: authLoading } = useAuth({ required: true })
   const [order, setOrder] = useState<Order | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const params = useParams()
   const router = useRouter()
   const orderId = params.id as string
 
-  useEffect(() => {
-    const fetchOrder = async () => {
-      if (!orderId) return
+  const fetchOrder = async () => {
+    if (!orderId || isLoading) return
 
-      setIsLoading(true)
-      try {
-        const response = await fetch(`/api/orders/${orderId}`)
+    setIsLoading(true)
+    setLoadError(null)
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            router.push("/orders")
-            return
-          }
-          throw new Error("Error al cargar el pedido")
+    try {
+      const response = await fetch(`/api/orders/${orderId}`)
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          router.push("/orders")
+          return
         }
-
-        const data = await response.json()
-        setOrder(data)
-      } catch (error) {
-        console.error("Error al cargar el pedido:", error)
-      } finally {
-        setIsLoading(false)
+        throw new Error("Error al cargar el pedido")
       }
-    }
 
-    if (!authLoading && session) {
+      const data = await response.json()
+      setOrder(data)
+    } catch (error) {
+      console.error("Error al cargar el pedido:", error)
+      setLoadError("No se pudo cargar el pedido. Intenta de nuevo más tarde.")
+    } finally {
+      setIsLoading(false)
+      setInitialLoadDone(true)
+    }
+  }
+
+  // Cargar la orden solo una vez al montar el componente
+  useEffect(() => {
+    if (!authLoading && session && !initialLoadDone && orderId) {
       fetchOrder()
     }
-  }, [orderId, session, authLoading, router])
+  }, [session, authLoading, initialLoadDone, orderId])
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
+    return (
+      <div className="container mx-auto py-10 px-4 max-w-4xl">
+        <OrderDetailSkeleton />
+      </div>
+    )
+  }
+
+  // Mostrar pantalla de carga inicial
+  if (isLoading && !initialLoadDone) {
+    return (
+      <div className="container mx-auto py-10 px-4 max-w-4xl">
+        <OrderDetailSkeleton />
+      </div>
+    )
+  }
+
+  // Mostrar mensaje de error si hay algún problema
+  if (loadError) {
     return (
       <div className="container mx-auto py-10 px-4 max-w-4xl">
         <div className="mb-6">
@@ -97,16 +122,16 @@ export default function OrderDetailsPage() {
             </Link>
           </Button>
         </div>
-        <Skeleton className="h-12 w-3/4 mb-6" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <Skeleton className="h-[400px] w-full rounded-lg" />
-          </div>
-          <div>
-            <Skeleton className="h-[200px] w-full rounded-lg mb-4" />
-            <Skeleton className="h-[150px] w-full rounded-lg" />
-          </div>
-        </div>
+        <Card className="text-center py-12">
+          <CardContent>
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-red-500">{loadError}</p>
+              <Button onClick={fetchOrder} disabled={isLoading}>
+                {isLoading ? "Cargando..." : "Intentar de nuevo"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -186,18 +211,29 @@ export default function OrderDetailsPage() {
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-4xl">
-      <div className="mb-6">
+      <div className="flex justify-between items-center mb-6">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/orders" className="flex items-center">
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver a mis pedidos
           </Link>
         </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchOrder}
+          disabled={isLoading}
+          className="flex items-center gap-1"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          {isLoading ? "Actualizando..." : "Actualizar"}
+        </Button>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold">Pedido #{order._id.substring(order._id.length - 8)}</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Badge className={getStatusColor(order.status)}>{getStatusText(order.status)}</Badge>
           <Badge className={getStatusColor(order.paymentStatus)}>{getStatusText(order.paymentStatus)}</Badge>
         </div>
@@ -205,7 +241,7 @@ export default function OrderDetailsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
-          <Card>
+          <Card className="py-5">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Package className="mr-2 h-5 w-5" />
@@ -233,8 +269,12 @@ export default function OrderDetailsPage() {
                         <p className="text-sm text-gray-500 mt-1">Cantidad: {item.quantity}</p>
                         <p className="text-sm font-medium mt-1">{formatCurrency(item.price)} c/u</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right hidden sm:block">
                         <p className="font-medium">{formatCurrency(item.price * item.quantity)}</p>
+                      </div>
+                      {/* Precio en móvil */}
+                      <div className="text-right sm:hidden absolute right-4">
+                        <p className="font-medium text-sm">{formatCurrency(item.price * item.quantity)}</p>
                       </div>
                     </div>
                   </li>
@@ -260,7 +300,7 @@ export default function OrderDetailsPage() {
         </div>
 
         <div className="space-y-6">
-          <Card>
+          <Card className="py-5">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Truck className="mr-2 h-5 w-5" />
@@ -295,7 +335,7 @@ export default function OrderDetailsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">ID de transacción</span>
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium truncate max-w-[150px]">
                       {order.paymentDetails.transactionId.substring(0, 10)}...
                     </span>
                   </div>

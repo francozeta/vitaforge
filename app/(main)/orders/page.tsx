@@ -5,10 +5,10 @@ import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency } from "@/lib/utils"
 import Link from "next/link"
-import { ChevronRight, ChevronLeft, ShoppingBag, Archive } from "lucide-react"
+import { ChevronRight, ChevronLeft, Archive, RefreshCw } from "lucide-react"
+import { OrderSkeleton } from "@/components/skeletons/order-skeleton"
 
 interface Order {
   _id: string
@@ -39,41 +39,48 @@ export default function OrdersPage() {
     limit: 10,
     pages: 0,
   })
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
+  // Función para cargar órdenes manualmente
   const fetchOrders = async (page = 1) => {
+    if (isLoading) return
+
     setIsLoading(true)
+    setLoadError(null)
+
     try {
       const response = await fetch(`/api/orders?page=${page}&limit=10`)
       const data = await response.json()
+
       setOrders(data.orders)
       setPagination(data.pagination)
     } catch (error) {
       console.error("Error al cargar órdenes:", error)
+      setLoadError("No se pudieron cargar los pedidos. Intenta de nuevo más tarde.")
     } finally {
       setIsLoading(false)
+      setInitialLoadDone(true)
     }
   }
 
+  // Cargar órdenes solo una vez al montar el componente
   useEffect(() => {
-    if (!authLoading && session) {
+    if (!authLoading && session && !initialLoadDone) {
       fetchOrders()
     }
-  }, [session, authLoading])
+  }, [session, authLoading, initialLoadDone])
 
   const handlePageChange = (newPage: number) => {
     fetchOrders(newPage)
   }
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="container mx-auto py-10 px-4 max-w-4xl">
         <h1 className="text-3xl font-bold mb-6">Mis Pedidos</h1>
-        <div className="space-y-4">
-          <Skeleton className="h-[150px] w-full rounded-lg" />
-          <Skeleton className="h-[150px] w-full rounded-lg" />
-          <Skeleton className="h-[150px] w-full rounded-lg" />
-        </div>
+        <OrderSkeleton />
       </div>
     )
   }
@@ -124,10 +131,52 @@ export default function OrdersPage() {
     }
   }
 
-  if (orders.length === 0) {
+  // Mostrar pantalla de carga inicial
+  if (isLoading && !initialLoadDone) {
     return (
       <div className="container mx-auto py-10 px-4 max-w-4xl">
         <h1 className="text-3xl font-bold mb-6">Mis Pedidos</h1>
+        <OrderSkeleton />
+      </div>
+    )
+  }
+
+  // Mostrar mensaje de error si hay algún problema
+  if (loadError) {
+    return (
+      <div className="container mx-auto py-10 px-4 max-w-4xl">
+        <h1 className="text-3xl font-bold mb-6">Mis Pedidos</h1>
+        <Card className="text-center py-12">
+          <CardContent>
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-red-500">{loadError}</p>
+              <Button onClick={() => fetchOrders()} disabled={isLoading}>
+                {isLoading ? "Cargando..." : "Intentar de nuevo"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Mostrar mensaje cuando no hay órdenes
+  if (initialLoadDone && orders.length === 0) {
+    return (
+      <div className="container mx-auto py-10 px-4 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Mis Pedidos</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchOrders()}
+            disabled={isLoading}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            {isLoading ? "Actualizando..." : "Actualizar"}
+          </Button>
+        </div>
         <Card className="text-center py-12">
           <CardContent>
             <div className="flex flex-col items-center gap-4">
@@ -146,20 +195,32 @@ export default function OrdersPage() {
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">Mis Pedidos</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Mis Pedidos</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fetchOrders(pagination.page)}
+          disabled={isLoading}
+          className="flex items-center gap-1"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          {isLoading ? "Actualizando..." : "Actualizar"}
+        </Button>
+      </div>
 
       <div className="space-y-6">
         {orders.map((order) => (
-          <Card key={order._id} className="overflow-hidden">
+          <Card key={order._id} className="overflow-hidden py-5">
             <CardHeader className="pb-0">
-              <div className="flex justify-between items-start">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                 <div>
                   <CardTitle className="text-lg">Pedido #{order._id.substring(order._id.length - 8)}</CardTitle>
                   <p className="text-sm text-gray-500">
                     {new Date(order.createdAt).toLocaleDateString()} - {new Date(order.createdAt).toLocaleTimeString()}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
                   <Badge className={getStatusColor(order.status)}>{getStatusText(order.status)}</Badge>
                   <Badge className={getStatusColor(order.paymentStatus)}>{getStatusText(order.paymentStatus)}</Badge>
                 </div>
@@ -172,7 +233,7 @@ export default function OrdersPage() {
                   <ul className="space-y-2">
                     {order.items.map((item) => (
                       <li key={item._id} className="flex justify-between text-sm">
-                        <span>
+                        <span className="line-clamp-1 flex-1">
                           {item.name} x{item.quantity}
                         </span>
                       </li>
@@ -180,11 +241,11 @@ export default function OrdersPage() {
                   </ul>
                 </div>
 
-                <div className="flex justify-between items-center pt-2 border-t">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t">
                   <div>
                     <p className="font-medium">Total: {formatCurrency(order.totalAmount)}</p>
                   </div>
-                  <Button asChild variant="outline" size="sm">
+                  <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
                     <Link href={`/orders/${order._id}`}>
                       Ver detalles
                       <ChevronRight className="ml-1 h-4 w-4" />
@@ -198,34 +259,56 @@ export default function OrdersPage() {
 
         {/* Paginación */}
         {pagination.pages > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
+          <div className="flex flex-wrap justify-center gap-2 mt-6">
             <Button
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
+              disabled={pagination.page === 1 || isLoading}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Anterior
+              <span className="hidden sm:inline">Anterior</span>
             </Button>
-            {Array.from({ length: pagination.pages }, (_, i) => (
-              <Button
-                key={i + 1}
-                variant={pagination.page === i + 1 ? "default" : "outline"}
-                size="sm"
-                onClick={() => handlePageChange(i + 1)}
-                className="w-8 h-8 p-0"
-              >
-                {i + 1}
-              </Button>
-            ))}
+
+            {/* Mostrar solo algunos números de página en móvil */}
+            {Array.from({ length: pagination.pages }, (_, i) => {
+              // En móvil, mostrar solo la página actual, la primera, la última y una página antes/después
+              const pageNum = i + 1
+              const isCurrentPage = pagination.page === pageNum
+              const isFirstPage = pageNum === 1
+              const isLastPage = pageNum === pagination.pages
+              const isNearCurrentPage = Math.abs(pageNum - pagination.page) <= 1
+
+              // Mostrar siempre en pantallas grandes
+              const showOnDesktop = true
+              // Mostrar en móvil solo si es la página actual, primera, última o cercana
+              const showOnMobile = isCurrentPage || isFirstPage || isLastPage || isNearCurrentPage
+
+              if (!showOnMobile) {
+                return null
+              }
+
+              return (
+                <Button
+                  key={pageNum}
+                  variant={isCurrentPage ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(pageNum)}
+                  disabled={isLoading}
+                  className="w-8 h-8 p-0"
+                >
+                  {pageNum}
+                </Button>
+              )
+            })}
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.pages}
+              disabled={pagination.page === pagination.pages || isLoading}
             >
-              Siguiente
+              <span className="hidden sm:inline">Siguiente</span>
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
