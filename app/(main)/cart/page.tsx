@@ -40,13 +40,19 @@ export default function CartPage() {
   const loadDefaultAddress = useCallback(
     async (force = false) => {
       // Si no está autenticado, no hacer nada
-      if (status !== "authenticated") return
+      if (status !== "authenticated") {
+        setIsInitialLoading(false)
+        return
+      }
 
       // Verificar si debemos recargar basado en el tiempo (15 minutos = 900000 ms)
       const now = Date.now()
       const shouldRefetch = force || !lastFetchTime || now - lastFetchTime > 900000
 
-      if (!shouldRefetch && defaultAddress) return
+      if (!shouldRefetch && defaultAddress) {
+        setIsInitialLoading(false)
+        return
+      }
 
       setIsLoadingAddress(true)
       try {
@@ -100,7 +106,7 @@ export default function CartPage() {
         body: JSON.stringify({
           items,
           shippingAddress: {
-            name: session.user.name || "",
+            name: session?.user?.name || "",
             address: defaultAddress.street,
             city: defaultAddress.city,
             province: defaultAddress.state,
@@ -121,10 +127,7 @@ export default function CartPage() {
       if (data.initPoint) {
         // Guardar el orderId en localStorage si existe
         if (data.orderId) {
-          // console.log("Guardando orderId en localStorage:", data.orderId)
           localStorage.setItem("currentOrderId", data.orderId)
-        } else {
-          // console.warn("No se recibió orderId del servidor")
         }
 
         // Limpiar el carrito antes de redirigir
@@ -154,15 +157,17 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">Tu Carrito</h1>
-        <Card className="text-center py-12">
+      <div className="container mx-auto px-4 py-6 md:py-8 max-w-4xl">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Tu Carrito</h1>
+        <Card className="text-center py-8 md:py-12">
           <CardContent>
-            <div className="flex flex-col items-center gap-4">
-              <ShoppingBag className="h-12 w-12 text-neutral-900" />
-              <h2 className="text-xl font-semibold">Tu carrito está vacío</h2>
-              <p className="text-muted-foreground">Parece que aún no has añadido productos a tu carrito.</p>
-              <Button asChild className="mt-4">
+            <div className="flex flex-col items-center gap-3 md:gap-4">
+              <ShoppingBag className="h-10 w-10 md:h-12 md:w-12 text-neutral-900" />
+              <h2 className="text-lg md:text-xl font-semibold">Tu carrito está vacío</h2>
+              <p className="text-muted-foreground text-sm md:text-base">
+                Parece que aún no has añadido productos a tu carrito.
+              </p>
+              <Button asChild className="mt-3 md:mt-4">
                 <Link href="/products">Ver Productos</Link>
               </Button>
             </div>
