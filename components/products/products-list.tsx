@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -40,50 +40,64 @@ export default function ProductsList({ category, search, page = 1, sort }: Produ
   const [sortOption, setSortOption] = useState(sort || "newest")
   const [totalProducts, setTotalProducts] = useState(0)
 
+  // Memoize the fetch URL to prevent unnecessary re-fetches
+  const fetchUrl = useMemo(() => {
+    let url = `/api/products?page=${currentPage}&limit=12`
+    if (category) url += `&category=${category}`
+    if (search) url += `&search=${encodeURIComponent(search || "")}`
+
+    // Add sorting parameter
+    switch (sortOption) {
+      case "price-asc":
+        url += "&sort=price"
+        break
+      case "price-desc":
+        url += "&sort=-price"
+        break
+      case "name-asc":
+        url += "&sort=name"
+        break
+      case "name-desc":
+        url += "&sort=-name"
+        break
+      default:
+        url += "&sort=-createdAt"
+    }
+
+    return url
+  }, [category, search, currentPage, sortOption])
+
+  // Optimize the fetch function with AbortController for cleanup
   useEffect(() => {
+    const controller = new AbortController()
+
     const fetchProducts = async () => {
       setLoading(true)
       try {
-        // Construir URL con parámetros
-        let url = `/api/products?page=${currentPage}&limit=12`
+        const response = await fetch(fetchUrl, {
+          signal: controller.signal,
+        })
 
-        if (category) url += `&category=${category}`
-        if (search) url += `&search=${encodeURIComponent(search)}`
-
-        // Añadir ordenamiento
-        switch (sortOption) {
-          case "price-asc":
-            url += "&sort=price" // Precio ascendente (menor a mayor)
-            break
-          case "price-desc":
-            url += "&sort=-price" // Precio descendente (mayor a menor)
-            break
-          case "name-asc":
-            url += "&sort=name" // Nombre A-Z
-            break
-          case "name-desc":
-            url += "&sort=-name" // Nombre Z-A
-            break
-          default:
-            url += "&sort=-createdAt" // Por defecto, más recientes primero
-        }
-
-        const response = await fetch(url)
         if (!response.ok) throw new Error("Error al cargar productos")
 
         const data = await response.json()
         setProducts(data.products)
         setTotalPages(data.pagination.totalPages)
         setTotalProducts(data.pagination.total)
-      } catch (error) {
-        console.error("Error:", error)
+      } catch (error: any) {
+        if (error.name !== "AbortError") {
+          console.error("Error:", error)
+        }
       } finally {
         setLoading(false)
       }
     }
 
     fetchProducts()
-  }, [category, search, currentPage, sortOption])
+
+    // Cleanup function to abort fetch on unmount or dependency change
+    return () => controller.abort()
+  }, [fetchUrl])
 
   // Manejar cambio de página
   const handlePageChange = (newPage: number) => {
@@ -166,6 +180,7 @@ export default function ProductsList({ category, search, page = 1, sort }: Produ
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="object-cover transition-transform hover:scale-105"
+                loading="lazy"
               />
               {product.featured && (
                 <Badge className="absolute right-2 top-2 text-[10px] md:text-xs bg-black text-white hover:bg-black/80">
