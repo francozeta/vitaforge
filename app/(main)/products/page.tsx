@@ -10,16 +10,19 @@ export const metadata: Metadata = {
   description: "Explora nuestra amplia gama de suplementos deportivos de alta calidad.",
 }
 
-export default function ProductsPage({
+export default async function ProductsPage({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
+  // Await searchParams before accessing its properties
+  const params = await searchParams
+
   // Extraer parámetros de búsqueda
-  const category = typeof searchParams.category === "string" ? searchParams.category : undefined
-  const search = typeof searchParams.search === "string" ? searchParams.search : undefined
-  const page = typeof searchParams.page === "string" ? Number.parseInt(searchParams.page) : 1
-  const sort = typeof searchParams.sort === "string" ? searchParams.sort : undefined
+  const category = typeof params.category === "string" ? params.category : undefined
+  const search = typeof params.search === "string" ? params.search : undefined
+  const page = typeof params.page === "string" ? Number.parseInt(params.page) : 1
+  const sort = typeof params.sort === "string" ? params.sort : undefined
 
   return (
     <div className="container mx-auto px-4 py-6 md:py-8">
